@@ -1,7 +1,17 @@
 {
-  // To host a Mini App, uncomment and set "source" to its build output folder:
+  // Telegram bot configuration
+  "name": "Sparky AI Bot",
+  "description": "A Telegram bot powered by OpenRouter AI",
+  
+  // Database configuration (managed by the platform)
+  "database": {
+    "migrations": "tgcloud/schema.js"
+  },
+  
+  // Static files configuration
+  // Uncomment and configure if you have a Mini App front-end
   // "static": {
-  //   "source": "dist"
-  // },
-  "$schema": "./node_modules/@tgcloud/cli/schema/tgcloud.json"
+  //   "source": "dist",
+  //   "spa": true
+  // }
 }
