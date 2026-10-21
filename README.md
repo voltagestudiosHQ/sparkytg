@@ -76,14 +76,35 @@ Just send a message! The bot will:
 
 ## Configuration
 
-### Environment Variables
+### Secrets Management
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OPENROUTER_API_KEY` | Your OpenRouter API key | Required |
-| `DEFAULT_MODEL` | Default model for new users | `openai/gpt-4o-mini` |
-| `DEFAULT_TEMPERATURE` | Default temperature | `70` |
-| `DEFAULT_MAX_TOKENS` | Default max tokens | `4096` |
+The tgcloud runtime has no environment variables. All secrets must be placed in `tgcloud/lib/secrets.js` (git-ignored, deployed with the bot).
+
+**Local Setup:**
+
+1. Copy the example secrets file:
+   ```bash
+   cp tgcloud/lib/secrets.example.js tgcloud/lib/secrets.js
+   ```
+   or use the helper script:
+   ```bash
+   ./addkey.sh OPENROUTER_KEY "your-actual-openrouter-key"
+   # or on Windows:
+   .\addkey.ps1 OPENROUTER_KEY "your-actual-openrouter-key"
+   ```
+
+2. Then authenticate with Telegram:
+   ```bash
+   npx tgcloud login
+   ```
+
+**GitHub Actions Secrets to Configure:**
+
+- `OPENROUTER_KEY` - Your OpenRouter API key (shared by both beta and prod bots)
+- `TGCLOUD_TOKEN_BETA` - Telegram CLI access token for beta bot (@BotFather -> Serverless -> CLI Access)
+- `TGCLOUD_TOKEN_PROD` - Telegram CLI access token for production bot (@BotFather -> Serverless -> CLI Access)
+
+> **Note:** If any real key was previously committed to git history, rotate it immediately (revoke + regenerate) as it persists in history regardless.
 
 ### Settings
 
@@ -125,7 +146,11 @@ The bot uses SQLite with the following tables:
 Use the `tgcloud run` command to test handlers locally:
 
 ```bash
-# Test message handler
+# First, set up your secrets:
+cp tgcloud/lib/secrets.example.js tgcloud/lib/secrets.js
+# Edit tgcloud/lib/secrets.js with your OPENROUTER_KEY
+
+# Then test handlers:
 npx tgcloud run handlers/message '{"text":"Hello","from":{"id":123},"chat":{"id":123}}'
 
 # Test with custom context
@@ -137,6 +162,32 @@ npx tgcloud run handlers/message '{"text":"/start","from":{"id":123},"chat":{"id
 1. Add new handler files in `tgcloud/handlers/`
 2. Import and use the SDK (`db`, `api`, `fetch`)
 3. Deploy with `npm run deploy`
+
+## Deployment
+
+### CI/CD Workflows
+
+The project includes GitHub Actions workflows for automated deployment:
+
+- **`deploy-beta.yml`**: Deploys to beta on every push to `main` branch
+- **`deploy-prod.yml`**: Deploys to production on version tags (`v*`) 
+
+Both workflows:
+1. Check out the repository
+2. Set up Node.js 20
+3. Install dependencies with `npm ci`
+4. Inject the OpenRouter key using `addkey.sh`
+5. Deploy with `npx tgcloud push` using the appropriate TGCLOUD_TOKEN
+
+### Manual Deployment
+
+```bash
+# Deploy beta
+npx tgcloud push
+
+# Or with explicit token
+TGCLOUD_TOKEN=your-beta-token npx tgcloud push
+```
 
 ## Models
 

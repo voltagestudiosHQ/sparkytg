@@ -1,0 +1,31 @@
+name: Deploy Beta
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inject OpenRouter key
+        run: ./addkey.sh OPENROUTER_KEY "$OPENROUTER_KEY"
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+
+      - name: Deploy to Telegram Serverless (Beta)
+        run: npx tgcloud push
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_BETA }}

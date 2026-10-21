@@ -1,4 +1,5 @@
 import { fetch } from 'sdk'
+import { OPENROUTER_KEY } from './secrets.js'
 
 const OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
 
@@ -36,10 +37,8 @@ export async function chat(params) {
     ...headers,
   }
 
-  // Get API key from environment
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY environment variable is required')
+  if (!OPENROUTER_KEY) {
+    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
   }
 
   const body = {
@@ -54,7 +53,7 @@ export async function chat(params) {
     method: 'POST',
     headers: {
       ...requestHeaders,
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${OPENROUTER_KEY}`,
     },
     body: JSON.stringify(body),
   })
@@ -76,15 +75,14 @@ export async function chat(params) {
  * @returns {Promise<Array>} - List of model objects
  */
 export async function listModels() {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY environment variable is required')
+  if (!OPENROUTER_KEY) {
+    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
   }
 
   const response = await fetch(`${OPENAI_BASE_URL}/models`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${OPENROUTER_KEY}`,
     },
   })
 
@@ -103,15 +101,14 @@ export async function listModels() {
  * @returns {Promise<Object>} - Model information
  */
 export async function getModel(modelId) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY environment variable is required')
+  if (!OPENROUTER_KEY) {
+    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
   }
 
   const response = await fetch(`${OPENAI_BASE_URL}/models/${modelId}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${OPENROUTER_KEY}`,
     },
   })
 
@@ -129,8 +126,6 @@ export async function getModel(modelId) {
  * @returns {number} - Approximate token count
  */
 export function countTokens(text) {
-  // Simple approximation: 4 characters per token on average
-  // This is a rough estimate; for accurate counting, use a proper tokenizer
   return Math.ceil(text.length / 4)
 }
 
@@ -143,7 +138,6 @@ export function countMessageTokens(messages) {
   let total = 0
   for (const msg of messages) {
     total += countTokens(msg.content || '')
-    // Add a small overhead for role and formatting
     total += 5
   }
   return total
