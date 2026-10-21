@@ -6,6 +6,9 @@ const OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
 /**
  * OpenRouter API client for Telegram bot
  * Uses OpenRouter's OpenAI-compatible API endpoint
+ * 
+ * NOTE: OPENROUTER_KEY must be provided via tgcloud/lib/secrets.js
+ * This file is created by addkey.sh and deployed with the bot.
  */
 export const OPENROUTER_API_URL = OPENAI_BASE_URL
 
@@ -30,15 +33,15 @@ export async function chat(params) {
     headers = {},
   } = params
 
+  if (!OPENROUTER_KEY) {
+    throw new Error('OPENROUTER_KEY is not configured. Create tgcloud/lib/secrets.js with: export const OPENROUTER_KEY = "your-key"')
+  }
+
   const requestHeaders = {
     'Content-Type': 'application/json',
     'HTTP-Referer': headers?.referer || 'https://tgcloud.ai',
     'X-Title': headers?.title || 'Telegram AI Bot',
     ...headers,
-  }
-
-  if (!OPENROUTER_KEY) {
-    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
   }
 
   const body = {
@@ -76,7 +79,7 @@ export async function chat(params) {
  */
 export async function listModels() {
   if (!OPENROUTER_KEY) {
-    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
+    throw new Error('OPENROUTER_KEY is not configured. Create tgcloud/lib/secrets.js with: export const OPENROUTER_KEY = "your-key"')
   }
 
   const response = await fetch(`${OPENAI_BASE_URL}/models`, {
@@ -102,7 +105,7 @@ export async function listModels() {
  */
 export async function getModel(modelId) {
   if (!OPENROUTER_KEY) {
-    throw new Error('OPENROUTER_KEY is not configured in secrets.js')
+    throw new Error('OPENROUTER_KEY is not configured. Create tgcloud/lib/secrets.js with: export const OPENROUTER_KEY = "your-key"')
   }
 
   const response = await fetch(`${OPENAI_BASE_URL}/models/${modelId}`, {

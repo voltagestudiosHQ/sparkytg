@@ -167,14 +167,16 @@ export default async function handleMessage(message, ctx) {
     
     if (error instanceof BotApiError) {
       if (error.code === 429) {
-        errorMessage = 'Rate limit exceeded. Please try again later.'
+        errorMessage = '⚠️ Rate limit exceeded. Please try again later.'
       } else if (error.code === 400) {
-        errorMessage = 'Invalid request. Please check your input.'
+        errorMessage = '❌ Invalid request. Please check your input.'
       }
-    } else if (error.message.includes('OPENROUTER_API_KEY')) {
-      errorMessage = 'Bot is not configured. Please set up the API key.'
-    } else if (error.message.includes('OpenRouter API error')) {
-      errorMessage = `AI service error: ${error.message}`
+    } else if (error.message && error.message.includes('OPENROUTER_KEY is not configured')) {
+      errorMessage = '⚙️ Bot not configured: OPENROUTER_KEY is missing. Please ensure tgcloud/lib/secrets.js exists with the correct key.'
+    } else if (error.message && error.message.includes('OpenRouter API error')) {
+      errorMessage = `❌ AI service error: ${error.message}`
+    } else if (error.message) {
+      errorMessage = `❌ Error: ${error.message}`
     }
 
     await api.sendMessage({ chat_id: chatId, text: errorMessage })
