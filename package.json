@@ -6,6 +6,7 @@
   },
   "scripts": {
     "deploy": "tgcloud push",
+    "deploy:force": "tgcloud push --force",
     "status": "tgcloud status",
     "run": "tgcloud run"
   }
