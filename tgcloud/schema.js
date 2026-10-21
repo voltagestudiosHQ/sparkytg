@@ -1,6 +1,6 @@
-import { table, integer, text, boolean, json, index, sql } from 'sdk/db'
+import { table, integer, text, boolean, sql, index } from 'sdk/db'
 
-// Users table - stores Telegram user information
+// Users table
 export const users = table('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   tgId: integer('tg_id').unique(),
@@ -13,7 +13,7 @@ export const users = table('users', {
   tgIdIdx: index('idx_users_tg_id').on(t.tgId),
 }))
 
-// Conversations table - tracks user conversations with the AI
+// Conversations table
 export const conversations = table('conversations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
@@ -23,10 +23,9 @@ export const conversations = table('conversations', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 }, (t) => ({
   userIdx: index('idx_conversations_user_id').on(t.userId),
-  createdIdx: index('idx_conversations_created').on(t.createdAt),
 }))
 
-// Messages table - stores AI conversation messages
+// Messages table
 export const messages = table('messages', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   conversationId: integer('conversation_id').notNull(),
@@ -36,17 +35,16 @@ export const messages = table('messages', {
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 }, (t) => ({
   convIdx: index('idx_messages_conversation_id').on(t.conversationId),
-  createdIdx: index('idx_messages_created').on(t.createdAt),
 }))
 
-// Settings table - user preferences
+// Settings table
 export const settings = table('settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').unique(),
+  activeConversationId: integer('active_conversation_id'),
   defaultModel: text('default_model').default('openai/gpt-4o-mini'),
   temperature: integer('temperature').default(70),
   maxTokens: integer('max_tokens').default(4096),
-  useStreaming: boolean('use_streaming').default(true),
   showStats: boolean('show_stats').default(true),
 }, (t) => ({
   userIdx: index('idx_settings_user_id').on(t.userId),
