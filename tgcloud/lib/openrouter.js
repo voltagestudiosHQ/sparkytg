@@ -1,5 +1,5 @@
 import { fetch } from 'sdk'
-import { OPENROUTER_KEY } from './secrets.js'
+import { OPENROUTER_KEY } from '../secrets.js'
 
 const OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
 

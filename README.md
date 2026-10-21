@@ -84,7 +84,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
 1. Copy the example secrets file:
    ```bash
-   cp tgcloud/lib/secrets.example.js tgcloud/lib/secrets.js
+   cp secrets.example.js tgcloud/secrets.js
    ```
    or use the helper script:
    ```bash
