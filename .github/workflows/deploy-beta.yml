@@ -3,7 +3,7 @@ name: Deploy Beta
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
