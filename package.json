@@ -5,8 +5,7 @@
     "@tgcloud/cli": "^0.2.0"
   },
   "scripts": {
-    "deploy": "tgcloud push",
-    "deploy:force": "tgcloud push --force",
+    "deploy": "tgcloud push --force",
     "status": "tgcloud status",
     "run": "tgcloud run"
   }
