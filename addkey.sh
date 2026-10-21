@@ -6,10 +6,10 @@ set -euo pipefail
 
 NAME="$1"
 VALUE="$2"
-SECRETS_FILE="tgcloud/secrets.js"
+SECRETS_FILE="tgcloud/lib/secrets.js"
 
 # Create directory if it doesn't exist
-mkdir -p tgcloud
+mkdir -p tgcloud/lib
 
 # Create file with header comment if it doesn't exist
 if [ ! -f "$SECRETS_FILE" ]; then
