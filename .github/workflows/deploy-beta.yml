@@ -29,3 +29,8 @@ jobs:
         run: npx tgcloud push --force
         env:
           TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_BETA }}
+
+      - name: Migrate Telegram Cloud schema (Beta)
+        run: npx tgcloud migrate --yes
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_BETA }}
