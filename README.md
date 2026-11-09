@@ -60,7 +60,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 ### Commands
 
 | Command | Description |
-|---------|-------------|
+| --------- | ------------- |
 | `/start` | Start the bot and get welcome message |
 | `/help` | Show all available commands |
 | `/new` | Start a new conversation |
@@ -75,6 +75,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 ### Chatting
 
 Just send a message! The bot will:
+
 1. Create a new conversation (if none active)
 2. Send your message to OpenRouter
 3. Return the AI response
@@ -89,10 +90,13 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 **Local Setup:**
 
 1. Copy the example secrets file:
+
    ```bash
    cp tgcloud/lib/secrets.example.js tgcloud/lib/secrets.js
    ```
+
    or use the helper script:
+
    ```bash
    ./addkey.sh OPENROUTER_KEY "your-actual-openrouter-key"
    # or on Windows:
@@ -100,6 +104,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
    ```
 
 2. Then authenticate with Telegram:
+
    ```bash
    npx tgcloud login
    ```
@@ -115,6 +120,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 ### Settings
 
 Each user has their own settings stored in the database:
+
 - **Model**: Which AI model to use
 - **Temperature**: Creativity level (0-100)
 - **Max Tokens**: Maximum tokens per response
@@ -122,7 +128,7 @@ Each user has their own settings stored in the database:
 
 ## Project Structure
 
-```
+```structure
 tgcloud/
 ├── schema.js           # Database schema definition
 ├── handlers/
@@ -212,6 +218,7 @@ Use `/models` to see the full list of available models.
 ### API Key Issues
 
 Make sure your OpenRouter API key is set in the environment:
+
 ```bash
 npx tgcloud run handlers/message '{"text":"/start","from":{"id":1},"chat":{"id":1}}'
 ```
@@ -221,6 +228,7 @@ If you get "OPENROUTER_API_KEY is required", check your `.env` file.
 ### Database Migrations
 
 After changing `tgcloud/schema.js`:
+
 1. Run `npm run deploy` to deploy the schema changes
 2. Run `npx tgcloud migrate` to apply database migrations
 
@@ -235,6 +243,7 @@ Pull requests are welcome! Please open an issue first for major changes.
 ## Support
 
 For issues or questions:
+
 - Open a GitHub issue
 - Check the [Telegram Bot API documentation](https://core.telegram.org/bots/api)
 - Check the [OpenRouter documentation](https://openrouter.ai/docs)
