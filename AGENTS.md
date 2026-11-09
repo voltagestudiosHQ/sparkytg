@@ -16,6 +16,11 @@ There is no server to run locally and no `node_modules` to import from at runtim
 the only things available inside a module are the platform SDK and other modules
 in this project.
 
+## Agent safety and tooling
+
+- Never read, `cat`, print, or otherwise expose the contents of `tgcloud/lib/secrets.js`, `.env` files, or environment variable values. Checking whether a secrets file exists is okay.
+- Do not install, add, or update npm packages. Use only dependencies already present in the project.
+
 ## Layout
 
 Everything the platform runs lives in the **`tgcloud/`** folder. The rest of the
