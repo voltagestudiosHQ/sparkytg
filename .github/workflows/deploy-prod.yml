@@ -29,3 +29,8 @@ jobs:
         run: npx tgcloud push
         env:
           TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_PROD }}
+
+      - name: Migrate Telegram Cloud schema (Production)
+        run: npx tgcloud migrate --yes
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_PROD }}
