@@ -26,6 +26,6 @@ jobs:
           OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
 
       - name: Deploy to Telegram Serverless (Beta)
-        run: npx tgcloud push
+        run: npx tgcloud push --force
         env:
           TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN_BETA }}
