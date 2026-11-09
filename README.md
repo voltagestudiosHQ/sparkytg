@@ -4,8 +4,8 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 
 ## Features
 
-- 💬 Chat with various AI models from OpenRouter
-- 🎯 Multiple model support (GPT-4, Claude, Mistral, etc.)
+- 💬 Chat with OpenRouter's `openrouter/free` model
+- 🤝 Casual, friendly assistant persona
 - ⚙️ Customizable settings per user
 - 💾 Conversation history saved in database
 - 📊 Token usage statistics
@@ -66,8 +66,8 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 | `/new` | Start a new conversation |
 | `/clear` | Clear current conversation |
 | `/settings` | Show your current settings |
-| `/model <name>` | Switch AI model |
-| `/models` | List available models |
+| `/model` | Show the fixed model (`openrouter/free`) |
+| `/models` | List models for reference (the bot always uses `openrouter/free`) |
 | `/temp <0-100>` | Set temperature (creativity) |
 | `/maxtokens <1-8192>` | Set max tokens per response |
 | `/stats` | Toggle token usage display |
@@ -119,9 +119,8 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
 ### Settings
 
-Each user has their own settings stored in the database:
+Each user has their own settings stored in the database. The model is fixed to `openrouter/free`; users can customize:
 
-- **Model**: Which AI model to use
 - **Temperature**: Creativity level (0-100)
 - **Max Tokens**: Maximum tokens per response
 - **Show Stats**: Whether to display token usage
@@ -203,15 +202,8 @@ TGCLOUD_TOKEN=your-beta-token npx tgcloud push
 
 ## Models
 
-The bot supports any model available on OpenRouter. Some popular options:
-
-- `openai/gpt-4o-mini` - Fast, affordable
-- `openai/gpt-4o` - More capable
-- `anthropic/claude-3-haiku` - Claude 3
-- `mistralai/mistral-7b` - Open source
-- `google/gemini-flash-1.5` - Google's model
-
-Use `/models` to see the full list of available models.
+The bot always uses OpenRouter's `openrouter/free` model. `/models` lists other
+available models for reference only; they cannot be selected in this bot.
 
 ## Troubleshooting
 
