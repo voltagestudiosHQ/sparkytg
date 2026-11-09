@@ -22,29 +22,35 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 ### Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/voltagestudiosHQ/sparkytg.git
    cd sparkytg
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Configure your environment:
+
    ```bash
    cp .env.example .env
    # Edit .env with your API keys
    ```
 
 4. Link your bot to the project:
+
    ```bash
    npx tgcloud login
    ```
+
    (Follow the prompts to authenticate with Telegram)
 
 5. Deploy your bot:
+
    ```bash
    npm run deploy
    ```
