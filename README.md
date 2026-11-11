@@ -4,7 +4,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 
 ## Features
 
-- 💬 Chat with OpenRouter's `openrouter/free` model
+- 💬 Chat with OpenRouter's `@preset/sparky` model
 - 🤝 Casual, friendly assistant persona
 - ⚙️ Customizable settings per user
 - 💾 Conversation history saved in database
@@ -66,8 +66,8 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 | `/new` | Start a new conversation |
 | `/clear` | Clear current conversation |
 | `/settings` | Show your current settings |
-| `/model` | Show the fixed model (`openrouter/free`) |
-| `/models` | List models for reference (the bot always uses `openrouter/free`) |
+| `/model` | Show the fixed model (`@preset/sparky`) |
+| `/models` | List models for reference (the bot always uses `@preset/sparky`) |
 | `/temp <0-100>` | Set temperature (creativity) |
 | `/maxtokens <1-8192>` | Set max tokens per response |
 | `/stats` | Toggle token usage display |
@@ -119,7 +119,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
 ### Settings
 
-Each user has their own settings stored in the database. The model is fixed to `openrouter/free`; users can customize:
+Each user has their own settings stored in the database. The model is fixed to `@preset/sparky`; users can customize:
 
 - **Temperature**: Creativity level (0-100)
 - **Max Tokens**: Maximum tokens per response
@@ -202,7 +202,7 @@ TGCLOUD_TOKEN=your-beta-token npx tgcloud push
 
 ## Models
 
-The bot always uses OpenRouter's `openrouter/free` model. `/models` lists other
+The bot always uses OpenRouter's `@preset/sparky` model. `/models` lists other
 available models for reference only; they cannot be selected in this bot.
 
 ## Troubleshooting
