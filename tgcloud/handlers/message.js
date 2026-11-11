@@ -137,13 +137,32 @@ async function handleCommand(text, chatId, tgUser) {
 
   if (command === '/new') {
     const user = await getOrCreateUser(tgUser)
+    const oldConversations = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.userId, user.id))
+      .all()
+
+    for (const conv of oldConversations) {
+      await db
+        .delete(messages)
+        .where(eq(messages.conversationId, conv.id))
+        .run()
+    }
+
+    await db
+      .delete(conversations)
+      .where(eq(conversations.userId, user.id))
+      .run()
+
     await db
       .insert(conversations)
       .values({ userId: user.id, model: MODEL })
       .run()
+
     await api.sendMessage({
       chat_id: chatId,
-      text: 'Started a new conversation. Your next message begins fresh.',
+      text: 'Started a new conversation. All previous messages were deleted, and your next message begins fresh.',
     })
     return
   }

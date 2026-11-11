@@ -59,7 +59,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 | Command | Description |
 | --------- | ------------- |
 | `/start` | Start the bot and get welcome message |
-| `/new` | Start a fresh conversation |
+| `/new` | Delete all conversation history and start fresh |
 | `/help` | Show help |
 
 ### Chatting
@@ -70,7 +70,7 @@ Just send a message! The bot will:
 2. Return the AI response
 3. Save the conversation history
 
-Use `/new` any time to start a fresh conversation.
+Use `/new` any time to delete all stored conversation history and start fresh.
 
 ## Configuration
 
