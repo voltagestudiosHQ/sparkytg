@@ -13,6 +13,20 @@ import { OPENROUTER_KEY } from './secrets.js'
  */
 export const OPENROUTER_API_URL = OPENAI_BASE_URL
 
+const MAX_ATTEMPTS = 3
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function delayFromHeaders(response, attempt) {
+  const retryAfter = Number(response.headers?.get?.('retry-after'))
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1000, 15000)
+  }
+  return Math.min(1000 * 2 ** attempt, 8000)
+}
+
 /**
  * Send a chat completion request to OpenRouter
  * @param {Object} params
@@ -52,26 +66,39 @@ export async function chat(params) {
     stream,
   }
 
-  const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      ...requestHeaders,
-      'Authorization': `Bearer ${OPENROUTER_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
+  let lastError = null
 
-  if (!response.ok) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await sleep(delayFromHeaders(lastError, attempt))
+    }
+
+    const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        ...requestHeaders,
+        'Authorization': `Bearer ${OPENROUTER_KEY}`,
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (response.ok) {
+      if (stream) {
+        return response.body
+      }
+      return await response.json()
+    }
+
     const errorText = await response.text()
     const status = response.status
-    throw new Error(`OpenRouter API error: ${status} - ${errorText}`)
-  }
+    const error = new Error(`OpenRouter API error: ${status} - ${errorText}`)
+    error.status = status
+    lastError = response
 
-  if (stream) {
-    return response.body
+    if (status !== 429 || attempt === MAX_ATTEMPTS - 1) {
+      throw error
+    }
   }
-
-  return await response.json()
 }
 
 /**
