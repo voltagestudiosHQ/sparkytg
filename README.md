@@ -6,10 +6,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 
 - 💬 Chat with OpenRouter's `@preset/sparky` model
 - 🤝 Casual, friendly assistant persona
-- ⚙️ Customizable settings per user
 - 💾 Conversation history saved in database
-- 📊 Token usage statistics
-- 🎨 Markdown formatting support
 
 ## Quick Start
 
@@ -62,24 +59,18 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 | Command | Description |
 | --------- | ------------- |
 | `/start` | Start the bot and get welcome message |
-| `/help` | Show all available commands |
-| `/new` | Start a new conversation |
-| `/clear` | Clear current conversation |
-| `/settings` | Show your current settings |
-| `/model` | Show the fixed model (`@preset/sparky`) |
-| `/models` | List models for reference (the bot always uses `@preset/sparky`) |
-| `/temp <0-100>` | Set temperature (creativity) |
-| `/maxtokens <1-8192>` | Set max tokens per response |
-| `/stats` | Toggle token usage display |
+| `/new` | Start a fresh conversation |
+| `/help` | Show help |
 
 ### Chatting
 
 Just send a message! The bot will:
 
-1. Create a new conversation (if none active)
-2. Send your message to OpenRouter
-3. Return the AI response
-4. Save the conversation history
+1. Send your message (with the last 20 messages for context) to OpenRouter
+2. Return the AI response
+3. Save the conversation history
+
+Use `/new` any time to start a fresh conversation.
 
 ## Configuration
 
@@ -117,13 +108,9 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
 > **Note:** If any real key was previously committed to git history, rotate it immediately (revoke + regenerate) as it persists in history regardless.
 
-### Settings
+### Model
 
-Each user has their own settings stored in the database. The model is fixed to `@preset/sparky`; users can customize:
-
-- **Temperature**: Creativity level (0-100)
-- **Max Tokens**: Maximum tokens per response
-- **Show Stats**: Whether to display token usage
+The bot always uses OpenRouter's `@preset/sparky` model. There are no per-user settings to configure — just chat.
 
 ## Project Structure
 
@@ -131,14 +118,9 @@ Each user has their own settings stored in the database. The model is fixed to `
 tgcloud/
 ├── schema.js           # Database schema definition
 ├── handlers/
-│   ├── message.js      # Main message handler
-│   ├── start.js        # /start command handler
-│   ├── help.js         # /help command handler
-│   └── callback_query.js # Inline button handler
-├── lib/
-│   ├── openrouter.js   # OpenRouter API client
-│   └── utils.js        # Utility functions
-└── endpoints/          # Mini App endpoints (if used)
+│   └── message.js      # Message + command handler
+└── lib/
+    └── openrouter.js   # OpenRouter API client
 ```
 
 ## Database Schema
@@ -146,7 +128,6 @@ tgcloud/
 The bot uses SQLite with the following tables:
 
 - **users**: Telegram user information
-- **settings**: User preferences
 - **conversations**: Chat conversations
 - **messages**: Individual messages in conversations
 
@@ -202,8 +183,7 @@ TGCLOUD_TOKEN=your-beta-token npx tgcloud push
 
 ## Models
 
-The bot always uses OpenRouter's `@preset/sparky` model. `/models` lists other
-available models for reference only; they cannot be selected in this bot.
+The bot always uses OpenRouter's `@preset/sparky` model. It cannot be changed.
 
 ## Troubleshooting
 
