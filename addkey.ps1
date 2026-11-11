@@ -26,6 +26,10 @@ param(
 
 $SECRETS_FILE = "tgcloud\lib\secrets.js"
 
+# Escape for a single-quoted JS string literal: backslashes, single
+# quotes, and newlines (so multi-line prompts stay valid JS)
+$VALUE_ESC = $VALUE.Replace('\', '\\').Replace("'", "\'").Replace("`r`n", "\n").Replace("`n", "\n")
+
 # Create directory if it doesn't exist
 if (!(Test-Path -Path "tgcloud\lib")) {
     New-Item -ItemType Directory -Path "tgcloud\lib" | Out-Null
@@ -43,11 +47,11 @@ $content = Get-Content -Path $SECRETS_FILE -Raw
 $pattern = "export const $NAME = "
 if ($content -match $pattern) {
     # Update existing line
-    $newContent = $content -replace "export const $NAME = .*?;", "export const $NAME = '$VALUE';"
+    $newContent = $content -replace "export const $NAME = .*?;", "export const $NAME = '$VALUE_ESC';"
     $newContent | Out-File -FilePath $SECRETS_FILE -Encoding UTF8 -NoNewline
 } else {
     # Append new export
-    $content + "`nexport const $NAME = '$VALUE';`n" | Out-File -FilePath $SECRETS_FILE -Encoding UTF8 -NoNewline
+    $content + "`nexport const $NAME = '$VALUE_ESC';`n" | Out-File -FilePath $SECRETS_FILE -Encoding UTF8 -NoNewline
 }
 
 Write-Host "Updated $NAME in $SECRETS_FILE"
