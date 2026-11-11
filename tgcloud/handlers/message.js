@@ -210,6 +210,8 @@ export default async function handleMessage(message, ctx) {
       }
     } else if (error?.message?.includes('OPENROUTER_KEY not configured')) {
       errorMessage = 'Bot not configured. Please set OPENROUTER_KEY in tgcloud/lib/secrets.js'
+    } else if (error?.status === 429 || error?.message?.includes('OpenRouter API error: 429')) {
+      errorMessage = 'The AI model is rate-limited right now. Please try again in a minute.'
     } else if (error?.message?.includes('OpenRouter API error')) {
       errorMessage = `AI Error: ${error.message}`
     } else if (error?.message) {
