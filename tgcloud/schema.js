@@ -42,7 +42,7 @@ export const settings = table('settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').unique(),
   activeConversationId: integer('active_conversation_id'),
-  defaultModel: text('default_model').default('openrouter/free'),
+  defaultModel: text('default_model').default('@preset/sparky'),
   temperature: integer('temperature').default(70),
   maxTokens: integer('max_tokens').default(4096),
   showStats: boolean('show_stats').default(true),
