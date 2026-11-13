@@ -7,6 +7,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 - 💬 Chat with OpenRouter's `@preset/sparky` model
 - 🤝 Casual, friendly assistant persona
 - 💾 Conversation history saved in database
+- ⚡ Streaming draft replies with a Stop button in private chats
 
 ## Quick Start
 
@@ -67,10 +68,14 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 Just send a message! The bot will:
 
 1. Send your message (with the last 20 messages for context) to OpenRouter
-2. Return the AI response
-3. Save the conversation history
+2. Show a streaming draft in private chats, which you can stop while it is generating
+3. Send the completed response and save the conversation history
 
 Use `/new` any time to delete all stored conversation history and start fresh.
+
+Streaming drafts are temporary previews. Completed replies are sent as regular
+messages so they remain in the chat. If you stop generation, the partial reply
+is sent and saved when any text has been generated.
 
 ## Configuration
 
@@ -213,6 +218,9 @@ After changing `tgcloud/schema.js`:
 
 1. Run `npm run deploy` to deploy the schema changes
 2. Run `npx tgcloud migrate` to apply database migrations
+
+Streaming replies add a `message_generations` table, so apply this migration
+after deploying the updated schema.
 
 ## License
 

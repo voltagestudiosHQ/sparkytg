@@ -37,6 +37,12 @@ export const messages = table('messages', {
   convIdx: index('idx_messages_conversation_id').on(t.conversationId),
 }))
 
+// Tracks active streaming replies so stop updates can reach their handler.
+export const messageGenerations = table('message_generations', {
+  id: text('id').primaryKey(),
+  stopped: boolean('stopped').notNull().default(false),
+})
+
 // Settings table
 export const settings = table('settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),

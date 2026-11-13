@@ -2,11 +2,11 @@ import { db, api, BotApiError } from 'sdk'
 import { eq, desc, sql } from 'sdk/db'
 import { chat } from '../lib/openrouter.js'
 import { SYSTEM_PROMPT } from '../lib/secrets.js'
-import { users, conversations, messages } from '../schema.js'
+import { users, conversations, messages, messageGenerations } from '../schema.js'
 
-const MODEL = '@preset/sparky'
-const HISTORY_LIMIT = 20
-const TELEGRAM_MESSAGE_LIMIT = 4000
+const MODEL = '@preset/sparky' // This is sparky itself. DO NOT TOUCH. If you want to change the model, change settings in the OpenRouter dashboard. This is a preset that uses the same model as Sparky, but with a system prompt that makes it more helpful and friendly for Telegram users.
+const HISTORY_LIMIT = 20 // Number of messages to keep in the conversation history for context
+const TELEGRAM_MESSAGE_LIMIT = 4000 // Telegram has a message character limit of 4096, but we use 4000 to be safe and avoid issues with formatting or special characters.
 
 export default async function handleMessage(message) {
   const { chat: tgChat, from: tgUser, text } = message
@@ -72,7 +72,7 @@ export default async function handleMessage(message) {
       return
     }
 
-    const response = await chat({
+    const chatParams = {
       model: MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -82,11 +82,25 @@ export default async function handleMessage(message) {
         referer: 'https://tgcloud.ai',
         title: 'Sparky AI Bot',
       },
-    })
+    }
 
-    const reply = response.choices?.[0]?.message?.content || ''
+    let reply
+    let stopped = false
+    if (tgChat.type === 'private') {
+      const result = await streamReply(chatParams, {
+        chatId,
+        draftId: message.message_id,
+        messageThreadId: message.message_thread_id,
+      })
+      reply = result.text
+      stopped = result.stopped
+    } else {
+      const response = await chat(chatParams)
+      reply = response.choices?.[0]?.message?.content || ''
+    }
 
     if (!reply) {
+      if (stopped) return
       await api.sendMessage({
         chat_id: chatId,
         text: 'Sorry, I did not receive a valid response from the AI.',
@@ -109,7 +123,7 @@ export default async function handleMessage(message) {
       .where(eq(conversations.id, conversation.id))
       .run()
 
-    await sendReply(chatId, reply, message.message_id)
+    await sendReply(chatId, reply, message.message_id, message.message_thread_id)
   } catch (error) {
     console.error('Message handler error:', error)
 
@@ -129,12 +143,15 @@ export default async function handleMessage(message) {
   }
 }
 
-async function sendReply(chatId, text, replyToMessageId) {
+async function sendReply(chatId, text, replyToMessageId, messageThreadId) {
+  const thread = messageThreadId ? { message_thread_id: messageThreadId } : {}
+
   if (text.length <= TELEGRAM_MESSAGE_LIMIT) {
     await api.sendMessage({
       chat_id: chatId,
       text,
       reply_to_message_id: replyToMessageId,
+      ...thread,
     })
     return
   }
@@ -144,7 +161,116 @@ async function sendReply(chatId, text, replyToMessageId) {
       chat_id: chatId,
       text: text.slice(i, i + TELEGRAM_MESSAGE_LIMIT),
       ...(i === 0 ? { reply_to_message_id: replyToMessageId } : {}),
+      ...thread,
     })
+  }
+}
+
+async function streamReply(params, { chatId, draftId, messageThreadId }) {
+  const generationId = `${chatId}:${draftId}`
+  const thread = messageThreadId ? { message_thread_id: messageThreadId } : {}
+
+  await db.insert(messageGenerations).values({ id: generationId }).run()
+
+  try {
+    await api.sendMessageDraft({
+      chat_id: chatId,
+      draft_id: draftId,
+      text: '',
+      can_stop: true,
+      keep_on_stop: true,
+      ...thread,
+    })
+
+    const body = await chat({ ...params, stream: true })
+    if (!body) throw new Error('OpenRouter returned an empty streaming response')
+
+    return await readStreamReply(body, { chatId, draftId, generationId, thread })
+  } finally {
+    await db.delete(messageGenerations).where(eq(messageGenerations.id, generationId)).run()
+  }
+}
+
+async function readStreamReply(body, { chatId, draftId, generationId, thread }) {
+  const decoder = new TextDecoder()
+  const iterator = body[Symbol.asyncIterator]()
+  let pending = iterator.next().then((result) => ({ type: 'chunk', result }))
+  let bufferedLine = ''
+  let reply = ''
+  let lastDraftUpdate = Date.now()
+
+  const processLine = (line) => {
+    if (!line.startsWith('data:')) return
+
+    const data = line.slice(5).trim()
+    if (!data || data === '[DONE]') return
+
+    const event = JSON.parse(data)
+    const content = event.choices?.[0]?.delta?.content
+    if (typeof content === 'string') reply += content
+  }
+
+  const processChunk = (text) => {
+    bufferedLine += text
+    let newline = bufferedLine.indexOf('\n')
+    while (newline !== -1) {
+      processLine(bufferedLine.slice(0, newline).replace(/\r$/, ''))
+      bufferedLine = bufferedLine.slice(newline + 1)
+      newline = bufferedLine.indexOf('\n')
+    }
+  }
+
+  const updateDraft = async () => {
+    if (!reply || reply.length > TELEGRAM_MESSAGE_LIMIT || Date.now() - lastDraftUpdate < 1000) return
+
+    await api.sendMessageDraft({
+      chat_id: chatId,
+      draft_id: draftId,
+      text: reply,
+      can_stop: true,
+      keep_on_stop: true,
+      ...thread,
+    })
+    lastDraftUpdate = Date.now()
+  }
+
+  while (true) {
+    let timeout
+    let outcome
+    try {
+      outcome = await Promise.race([
+        pending,
+        new Promise((resolve) => {
+          timeout = setTimeout(() => resolve({ type: 'poll' }), 500)
+        }),
+      ])
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    if (outcome.type === 'poll') {
+      const generation = await db
+        .select()
+        .from(messageGenerations)
+        .where(eq(messageGenerations.id, generationId))
+        .get()
+      if (generation?.stopped) {
+        await iterator.return?.()
+        return { text: reply, stopped: true }
+      }
+      continue
+    }
+
+    if (outcome.result.done) {
+      processChunk(decoder.decode())
+      if (bufferedLine) processLine(bufferedLine.replace(/\r$/, ''))
+      return { text: reply, stopped: false }
+    }
+
+    const chunk = outcome.result.value
+    processChunk(typeof chunk === 'string' ? chunk : decoder.decode(chunk, { stream: true }))
+    await updateDraft()
+    pending = iterator.next().then((result) => ({ type: 'chunk', result }))
   }
 }
 
