@@ -102,7 +102,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
    ```powershell
    .\addkey.ps1 OPENROUTER_KEY "your-actual-openrouter-key"
-   .\addkey.ps1 SYSTEM_PROMPT "You are Sparky, a casual, friendly, and helpful assistant..."
+   .\addkey.ps1 SYSTEM_PROMPT "You are Sparky, a whimsical AI sidekick with a penchant for wild tangents and unfiltered honesty..."
    ```
 
    `SYSTEM_PROMPT` is the bot's persona. Change it any time with `addkey.sh` + `npx tgcloud push` — no code edits needed. Apostrophes and multi-line prompts are handled.
