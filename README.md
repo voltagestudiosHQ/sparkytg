@@ -167,9 +167,10 @@ npx tgcloud run handlers/message '{"text":"/start","from":{"id":123},"chat":{"id
 The project includes GitHub Actions workflows for automated deployment:
 
 - **`deploy-beta.yml`**: Deploys to beta on every push to `main` branch
-- **`deploy-prod.yml`**: Deploys to production on version tags (`v*`) 
+- **`deploy-prod.yml`**: Deploys to production on version tags (`v*`)
 
 Both workflows:
+
 1. Check out the repository
 2. Set up Node.js 20
 3. Install dependencies with `npm ci`
