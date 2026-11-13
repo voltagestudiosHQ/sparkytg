@@ -91,7 +91,11 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
    ```bash
    ./addkey.sh OPENROUTER_KEY "your-actual-openrouter-key"
    ./addkey.sh SYSTEM_PROMPT "You are Sparky, a casual, friendly, and helpful assistant..."
-   # or on Windows:
+   ```
+
+   or if you use powershell
+
+   ```powershell
    .\addkey.ps1 OPENROUTER_KEY "your-actual-openrouter-key"
    .\addkey.ps1 SYSTEM_PROMPT "You are Sparky, a casual, friendly, and helpful assistant..."
    ```
