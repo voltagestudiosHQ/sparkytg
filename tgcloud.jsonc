@@ -6,7 +6,7 @@
   // Database configuration (managed by the platform)
   "database": {
     "migrations": "tgcloud/schema.js"
-  },
+  }
   
   // Static files configuration
   // Uncomment and configure if you have a Mini App front-end
