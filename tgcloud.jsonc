@@ -1,7 +1,7 @@
 {
   // Telegram bot configuration
-  "name": "Sparky AI Bot",
-  "description": "A Telegram bot powered by OpenRouter AI",
+  "name": "Sparky for Telegram",
+  "description": "The future of Sparky is here! (and Open Source) Sparky is an AI assistant that can help you with various tasks and provide information.",
   
   // Database configuration (managed by the platform)
   "database": {

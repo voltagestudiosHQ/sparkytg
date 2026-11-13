@@ -1,7 +1,8 @@
-// Copy to secrets.js and fill in real values. In CI, values are
+// Public template only. Copy to tgcloud/lib/secrets.js and add real
+// values there; never put credentials in this file. In CI, values are
 // injected via addkey.sh instead.
 
-export const OPENROUTER_KEY = 'sk-or-v1-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+export const OPENROUTER_KEY = 'YOUR_OPENROUTER_API_KEY'
 
 // The bot's persona. Edit this any time and push (or just update the
 // secret) to change how Sparky behaves. No code changes needed.
