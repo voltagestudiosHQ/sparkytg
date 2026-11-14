@@ -1,9 +1,11 @@
 import { db, api, BotApiError } from 'sdk'
 import { eq, desc, sql } from 'sdk/db'
 import { chat } from '../lib/openrouter.js'
-import { SYSTEM_PROMPT } from '../lib/secrets.js'
+import { DEFAULT_SYSTEM_PROMPT } from '../lib/persona.js'
+import { SYSTEM_PROMPT as SYSTEM_PROMPT_OVERRIDE } from '../lib/secrets.js'
 import { users, conversations, messages, messageGenerations } from '../schema.js'
 
+const SYSTEM_PROMPT = SYSTEM_PROMPT_OVERRIDE || DEFAULT_SYSTEM_PROMPT
 const MODEL = '@preset/sparky' // This is sparky itself. DO NOT TOUCH. If you want to change the model, change settings in the OpenRouter dashboard. This is a preset that uses the same model as Sparky, but with a system prompt that makes it more helpful and friendly for Telegram users.
 const HISTORY_LIMIT = 20 // Number of messages to keep in the conversation history for context
 const TELEGRAM_MESSAGE_LIMIT = 4000 // Telegram has a message character limit of 4096, but we use 4000 to be safe and avoid issues with formatting or special characters.
@@ -63,14 +65,6 @@ export default async function handleMessage(message) {
     history.reverse()
 
     await api.sendChatAction({ chat_id: chatId, action: 'typing' })
-
-    if (!SYSTEM_PROMPT) {
-      await api.sendMessage({
-        chat_id: chatId,
-        text: 'Bot not configured. Please set SYSTEM_PROMPT in tgcloud/lib/secrets.js',
-      })
-      return
-    }
 
     const chatParams = {
       model: MODEL,

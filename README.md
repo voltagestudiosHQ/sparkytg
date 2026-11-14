@@ -105,7 +105,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
    .\addkey.ps1 SYSTEM_PROMPT "You are Sparky, a whimsical AI sidekick with a penchant for wild tangents and unfiltered honesty..."
    ```
 
-   `SYSTEM_PROMPT` is the bot's persona. Change it any time with `addkey.sh` + `npx tgcloud push` — no code edits needed. Apostrophes and multi-line prompts are handled.
+   `SYSTEM_PROMPT` is an **optional** override for the bot's persona. Sparky's built-in persona lives in `tgcloud/lib/persona.js`; leave `SYSTEM_PROMPT` empty to use it, or set it (via `addkey.sh` + `npx tgcloud push`, or the `SYSTEM_PROMPT` GitHub Actions secret) to change Sparky's behavior with no code edits. Apostrophes and multi-line prompts are handled.
 
 2. Then authenticate with Telegram:
 
@@ -116,7 +116,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 **GitHub Actions Secrets to Configure:**
 
 - `OPENROUTER_KEY` - Your OpenRouter API key (shared by both beta and prod bots)
-- `SYSTEM_PROMPT` - The bot's persona/instructions
+- `SYSTEM_PROMPT` - Optional persona/instructions override (built-in persona is in `tgcloud/lib/persona.js`)
 - `TGCLOUD_TOKEN_BETA` - Telegram CLI access token for beta bot (@BotFather -> Serverless -> CLI Access)
 - `TGCLOUD_TOKEN_PROD` - Telegram CLI access token for production bot (@BotFather -> Serverless -> CLI Access)
 
@@ -124,7 +124,7 @@ The tgcloud runtime has no environment variables. All secrets must be placed in 
 
 ### Model
 
-The bot always uses OpenRouter's `@preset/sparky` model. There are no per-user settings to configure — just chat. The bot's personality comes from the `SYSTEM_PROMPT` secret.
+The bot always uses OpenRouter's `@preset/sparky` model. There are no per-user settings to configure — just chat. Sparky's personality comes from the built-in persona in `tgcloud/lib/persona.js`, optionally overridden by the `SYSTEM_PROMPT` secret.
 
 ## Project Structure
 
