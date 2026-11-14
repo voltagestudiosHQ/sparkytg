@@ -6,6 +6,7 @@ import { SYSTEM_PROMPT as SYSTEM_PROMPT_OVERRIDE } from '../lib/secrets.js'
 import { users, conversations, messages, messageGenerations } from '../schema.js'
 
 const SYSTEM_PROMPT = SYSTEM_PROMPT_OVERRIDE || DEFAULT_SYSTEM_PROMPT
+const SEND_PROFILE_PHOTO = true // Include the sender's Telegram profile photo in the context; set false if the model is not vision-capable
 const MODEL = '@preset/sparky' // This is sparky itself. DO NOT TOUCH. If you want to change the model, change settings in the OpenRouter dashboard. This is a preset that uses the same model as Sparky, but with a system prompt that makes it more helpful and friendly for Telegram users.
 const HISTORY_LIMIT = 20 // Number of messages to keep in the conversation history for context
 const TELEGRAM_MESSAGE_LIMIT = 4000 // Telegram has a message character limit of 4096, but we use 4000 to be safe and avoid issues with formatting or special characters.
@@ -66,18 +67,40 @@ export default async function handleMessage(message) {
 
     await api.sendChatAction({ chat_id: chatId, action: 'typing' })
 
+    let bio = tgChat.bio
+    if (!bio && tgChat.type === 'private') {
+      try {
+        const chatInfo = await api.getChat({ chat_id: chatId })
+        bio = chatInfo?.bio
+      } catch (error) {
+        console.error('Failed to fetch chat bio:', error)
+      }
+    }
+
     const senderName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
     const senderHandle = tgUser.username ? ` (@${tgUser.username})` : ''
-    const systemContent = senderName
-      ? `${SYSTEM_PROMPT}\n\nYou are currently talking with ${senderName}${senderHandle}.`
-      : SYSTEM_PROMPT
+    const senderContext = senderName ? `You are currently talking with ${senderName}${senderHandle}.` : ''
+    const bioContext = bio ? `Their Telegram bio: "${bio}"` : ''
+    const systemContent = [SYSTEM_PROMPT, senderContext, bioContext].filter(Boolean).join('\n\n')
+
+    const photoDataUrl = SEND_PROFILE_PHOTO ? await getUserPhotoDataUrl(tgUser.id) : null
+    const baseMessages = [
+      { role: 'system', content: systemContent },
+      ...history.map((m) => ({ role: m.role, content: m.content })),
+    ]
+    if (photoDataUrl) {
+      baseMessages.splice(1, 0, {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'For context: this is the Telegram profile photo of the person you are talking with.' },
+          { type: 'image_url', image_url: { url: photoDataUrl } },
+        ],
+      })
+    }
 
     const chatParams = {
       model: MODEL,
-      messages: [
-        { role: 'system', content: systemContent },
-        ...history.map((m) => ({ role: m.role, content: m.content })),
-      ],
+      messages: baseMessages,
       headers: {
         referer: 'https://tgcloud.ai',
         title: 'Sparky AI Bot',
@@ -86,17 +109,35 @@ export default async function handleMessage(message) {
 
     let reply
     let stopped = false
-    if (tgChat.type === 'private') {
-      const result = await streamReply(chatParams, {
-        chatId,
-        draftId: message.message_id,
-        messageThreadId: message.message_thread_id,
-      })
-      reply = result.text
-      stopped = result.stopped
-    } else {
-      const response = await chat(chatParams)
-      reply = response.choices?.[0]?.message?.content || ''
+    try {
+      if (tgChat.type === 'private') {
+        const result = await streamReply(chatParams, {
+          chatId,
+          draftId: message.message_id,
+          messageThreadId: message.message_thread_id,
+        })
+        reply = result.text
+        stopped = result.stopped
+      } else {
+        const response = await chat(chatParams)
+        reply = response.choices?.[0]?.message?.content || ''
+      }
+    } catch (error) {
+      if (!photoDataUrl) throw error
+      console.error('AI call with profile photo failed, retrying without it:', error)
+      const retryParams = { ...chatParams, messages: baseMessages.filter((m) => !Array.isArray(m.content)) }
+      if (tgChat.type === 'private') {
+        const result = await streamReply(retryParams, {
+          chatId,
+          draftId: message.message_id,
+          messageThreadId: message.message_thread_id,
+        })
+        reply = result.text
+        stopped = result.stopped
+      } else {
+        const response = await chat(retryParams)
+        reply = response.choices?.[0]?.message?.content || ''
+      }
     }
 
     if (!reply) {
@@ -141,6 +182,32 @@ export default async function handleMessage(message) {
 
     await api.sendMessage({ chat_id: chatId, text: errorMessage })
   }
+}
+
+async function getUserPhotoDataUrl(userId) {
+  try {
+    const photos = await api.getUserProfilePhotos({ user_id: userId, limit: 1 })
+    const sizes = photos?.photos?.[0]
+    if (!sizes?.length) return null
+
+    const fileId = sizes[sizes.length - 1].file_id
+    const bytes = await api.getFileContent(fileId)
+    if (!bytes?.length) return null
+
+    return `data:image/jpeg;base64,${toBase64(bytes)}`
+  } catch (error) {
+    console.error('Failed to fetch profile photo:', error)
+    return null
+  }
+}
+
+function toBase64(bytes) {
+  let binary = ''
+  const CHUNK_SIZE = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE))
+  }
+  return btoa(binary)
 }
 
 async function sendReply(chatId, text, replyToMessageId, messageThreadId) {
