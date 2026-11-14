@@ -21,9 +21,12 @@ jobs:
         run: npm ci
 
       - name: Inject OpenRouter key
-        run: ./addkey.sh OPENROUTER_KEY "$OPENROUTER_KEY"
+        run: |
+          ./addkey.sh OPENROUTER_KEY "$OPENROUTER_KEY"
+          ./addkey.sh SYSTEM_PROMPT "$SYSTEM_PROMPT"
         env:
           OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          SYSTEM_PROMPT: ${{ secrets.SYSTEM_PROMPT }}
 
       - name: Deploy to Telegram Serverless (Production)
         run: npx tgcloud push
