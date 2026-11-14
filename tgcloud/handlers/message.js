@@ -88,13 +88,19 @@ export default async function handleMessage(message) {
     let reply
     let stopped = false
     if (tgChat.type === 'private') {
-      const result = await streamReply(chatParams, {
-        chatId,
-        draftId: message.message_id,
-        messageThreadId: message.message_thread_id,
-      })
-      reply = result.text
-      stopped = result.stopped
+      try {
+        const result = await streamReply(chatParams, {
+          chatId,
+          draftId: message.message_id,
+          messageThreadId: message.message_thread_id,
+        })
+        reply = result.text
+        stopped = result.stopped
+      } catch (streamError) {
+        console.error('Streaming reply failed, falling back to a regular reply:', streamError)
+        const response = await chat(chatParams)
+        reply = response.choices?.[0]?.message?.content || ''
+      }
     } else {
       const response = await chat(chatParams)
       reply = response.choices?.[0]?.message?.content || ''
@@ -138,6 +144,10 @@ export default async function handleMessage(message) {
       errorMessage = 'The AI model is rate-limited right now. Please try again in a minute.'
     } else if (error?.message?.includes('OPENROUTER_KEY not configured')) {
       errorMessage = 'Bot not configured. Please set OPENROUTER_KEY in tgcloud/lib/secrets.js'
+    }
+
+    if (errorMessage === 'Sorry, an error occurred.' && error?.message) {
+      errorMessage += `\n\nDetails: ${String(error.message).slice(0, 300)}`
     }
 
     await api.sendMessage({ chat_id: chatId, text: errorMessage })
