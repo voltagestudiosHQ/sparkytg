@@ -66,10 +66,16 @@ export default async function handleMessage(message) {
 
     await api.sendChatAction({ chat_id: chatId, action: 'typing' })
 
+    const senderName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+    const senderHandle = tgUser.username ? ` (@${tgUser.username})` : ''
+    const systemContent = senderName
+      ? `${SYSTEM_PROMPT}\n\nYou are currently talking with ${senderName}${senderHandle}.`
+      : SYSTEM_PROMPT
+
     const chatParams = {
       model: MODEL,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemContent },
         ...history.map((m) => ({ role: m.role, content: m.content })),
       ],
       headers: {
