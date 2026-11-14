@@ -1,12 +1,12 @@
-import { db, api, BotApiError } from 'sdk'
+import { db, api, BotApiError, InputFile } from 'sdk'
 import { eq, desc, sql } from 'sdk/db'
 import { chat } from '../lib/openrouter.js'
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/persona.js'
+import { synthesizeSpeech } from '../lib/tts.js'
 import { SYSTEM_PROMPT as SYSTEM_PROMPT_OVERRIDE } from '../lib/secrets.js'
-import { users, conversations, messages, messageGenerations } from '../schema.js'
+import { users, conversations, messages, messageGenerations, settings } from '../schema.js'
 
 const SYSTEM_PROMPT = SYSTEM_PROMPT_OVERRIDE || DEFAULT_SYSTEM_PROMPT
-const SEND_PROFILE_PHOTO = true // Include the sender's Telegram profile photo in the context; set false if the model is not vision-capable
 const MODEL = '@preset/sparky' // This is sparky itself. DO NOT TOUCH. If you want to change the model, change settings in the OpenRouter dashboard. This is a preset that uses the same model as Sparky, but with a system prompt that makes it more helpful and friendly for Telegram users.
 const HISTORY_LIMIT = 20 // Number of messages to keep in the conversation history for context
 const TELEGRAM_MESSAGE_LIMIT = 4000 // Telegram has a message character limit of 4096, but we use 4000 to be safe and avoid issues with formatting or special characters.
@@ -83,24 +83,12 @@ export default async function handleMessage(message) {
     const bioContext = bio ? `Their Telegram bio: "${bio}"` : ''
     const systemContent = [SYSTEM_PROMPT, senderContext, bioContext].filter(Boolean).join('\n\n')
 
-    const photoDataUrl = SEND_PROFILE_PHOTO ? await getUserPhotoDataUrl(tgUser.id) : null
-    const baseMessages = [
-      { role: 'system', content: systemContent },
-      ...history.map((m) => ({ role: m.role, content: m.content })),
-    ]
-    if (photoDataUrl) {
-      baseMessages.splice(1, 0, {
-        role: 'user',
-        content: [
-          { type: 'text', text: 'For context: this is the Telegram profile photo of the person you are talking with.' },
-          { type: 'image_url', image_url: { url: photoDataUrl } },
-        ],
-      })
-    }
-
     const chatParams = {
       model: MODEL,
-      messages: baseMessages,
+      messages: [
+        { role: 'system', content: systemContent },
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+      ],
       headers: {
         referer: 'https://tgcloud.ai',
         title: 'Sparky AI Bot',
@@ -109,35 +97,17 @@ export default async function handleMessage(message) {
 
     let reply
     let stopped = false
-    try {
-      if (tgChat.type === 'private') {
-        const result = await streamReply(chatParams, {
-          chatId,
-          draftId: message.message_id,
-          messageThreadId: message.message_thread_id,
-        })
-        reply = result.text
-        stopped = result.stopped
-      } else {
-        const response = await chat(chatParams)
-        reply = response.choices?.[0]?.message?.content || ''
-      }
-    } catch (error) {
-      if (!photoDataUrl) throw error
-      console.error('AI call with profile photo failed, retrying without it:', error)
-      const retryParams = { ...chatParams, messages: baseMessages.filter((m) => !Array.isArray(m.content)) }
-      if (tgChat.type === 'private') {
-        const result = await streamReply(retryParams, {
-          chatId,
-          draftId: message.message_id,
-          messageThreadId: message.message_thread_id,
-        })
-        reply = result.text
-        stopped = result.stopped
-      } else {
-        const response = await chat(retryParams)
-        reply = response.choices?.[0]?.message?.content || ''
-      }
+    if (tgChat.type === 'private') {
+      const result = await streamReply(chatParams, {
+        chatId,
+        draftId: message.message_id,
+        messageThreadId: message.message_thread_id,
+      })
+      reply = result.text
+      stopped = result.stopped
+    } else {
+      const response = await chat(chatParams)
+      reply = response.choices?.[0]?.message?.content || ''
     }
 
     if (!reply) {
@@ -165,6 +135,22 @@ export default async function handleMessage(message) {
       .run()
 
     await sendReply(chatId, reply, message.message_id, message.message_thread_id)
+
+    if (await getTtsEnabled(user.id)) {
+      try {
+        const audio = await synthesizeSpeech(reply)
+        if (audio?.length) {
+          await api.sendVoice({
+            chat_id: chatId,
+            voice: new InputFile(audio, 'sparky.mp3', { type: 'audio/mpeg' }),
+            reply_to_message_id: message.message_id,
+            ...(message.message_thread_id ? { message_thread_id: message.message_thread_id } : {}),
+          })
+        }
+      } catch (error) {
+        console.error('Text-to-speech failed:', error)
+      }
+    }
   } catch (error) {
     console.error('Message handler error:', error)
 
@@ -182,32 +168,6 @@ export default async function handleMessage(message) {
 
     await api.sendMessage({ chat_id: chatId, text: errorMessage })
   }
-}
-
-async function getUserPhotoDataUrl(userId) {
-  try {
-    const photos = await api.getUserProfilePhotos({ user_id: userId, limit: 1 })
-    const sizes = photos?.photos?.[0]
-    if (!sizes?.length) return null
-
-    const fileId = sizes[sizes.length - 1].file_id
-    const bytes = await api.getFileContent(fileId)
-    if (!bytes?.length) return null
-
-    return `data:image/jpeg;base64,${toBase64(bytes)}`
-  } catch (error) {
-    console.error('Failed to fetch profile photo:', error)
-    return null
-  }
-}
-
-function toBase64(bytes) {
-  let binary = ''
-  const CHUNK_SIZE = 0x8000
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE))
-  }
-  return btoa(binary)
 }
 
 async function sendReply(chatId, text, replyToMessageId, messageThreadId) {
@@ -384,10 +344,22 @@ async function handleCommand(text, chatId, tgUser) {
     return
   }
 
+  if (command === '/tts') {
+    const user = await getOrCreateUser(tgUser)
+    const enabled = await toggleTts(user.id)
+    await api.sendMessage({
+      chat_id: chatId,
+      text: enabled
+        ? 'Text-to-speech is ON. Voice replies will be attached to my messages.'
+        : 'Text-to-speech is OFF. I will reply with text only.',
+    })
+    return
+  }
+
   if (command === '/help') {
     await api.sendMessage({
       chat_id: chatId,
-      text: 'Send me any message and I will reply.\n\n/new - start a fresh conversation\n/help - show this help',
+      text: 'Send me any message and I will reply.\n\n/new - start a fresh conversation\n/tts - toggle text-to-speech voice replies\n/help - show this help',
     })
     return
   }
@@ -396,6 +368,24 @@ async function handleCommand(text, chatId, tgUser) {
     chat_id: chatId,
     text: 'Unknown command. Send me a message, or use /help.',
   })
+}
+
+async function getTtsEnabled(userId) {
+  const row = await db.select().from(settings).where(eq(settings.userId, userId)).get()
+  return row?.ttsEnabled ?? false
+}
+
+async function toggleTts(userId) {
+  const row = await db.select().from(settings).where(eq(settings.userId, userId)).get()
+  const enabled = !(row?.ttsEnabled ?? false)
+
+  if (row) {
+    await db.update(settings).set({ ttsEnabled: enabled }).where(eq(settings.userId, userId)).run()
+  } else {
+    await db.insert(settings).values({ userId, ttsEnabled: enabled }).run()
+  }
+
+  return enabled
 }
 
 async function getOrCreateUser(tgUser) {

@@ -52,6 +52,7 @@ export const settings = table('settings', {
   temperature: integer('temperature').default(70),
   maxTokens: integer('max_tokens').default(4096),
   showStats: boolean('show_stats').default(true),
+  ttsEnabled: boolean('tts_enabled').default(false),
 }, (t) => ({
   userIdx: index('idx_settings_user_id').on(t.userId),
 }))

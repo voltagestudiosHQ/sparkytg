@@ -61,6 +61,7 @@ A Telegram bot that connects users to OpenRouter AI models. Built using Telegram
 | --------- | ------------- |
 | `/start` | Start the bot and get welcome message |
 | `/new` | Delete all conversation history and start fresh |
+| `/tts` | Toggle text-to-speech voice replies (off by default) |
 | `/help` | Show help |
 
 ### Chatting
